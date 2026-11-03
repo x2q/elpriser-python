@@ -1,0 +1,84 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "elpriser"
+dynamic = ["version"]
+description = "Typed Python client for the elpriser.org electricity price API: 40 European zones, current and next price, cheapest hours, forecast."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.9"
+authors = [{ name = "elpriser.org" }]
+keywords = ["electricity", "electricity-prices", "spot-price", "nordpool", "elpriser", "denmark", "energy", "smart-home", "api-client"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Home Automation",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+dependencies = ["tzdata; sys_platform == 'win32'"]
+
+[project.optional-dependencies]
+async = ["httpx>=0.24"]
+pandas = ["pandas>=1.5"]
+all = ["httpx>=0.24", "pandas>=1.5"]
+dev = ["pytest>=7.4", "pytest-asyncio>=0.23", "httpx>=0.24", "pandas>=1.5", "ruff", "mypy", "build", "twine"]
+
+[project.scripts]
+elpriser = "elpriser.cli:main"
+
+[project.urls]
+Homepage = "https://elpriser.org"
+Documentation = "https://elpriser.org/api"
+Repository = "https://github.com/x2q/elpriser-python"
+Issues = "https://github.com/x2q/elpriser-python/issues"
+"npm client" = "https://github.com/x2q/elpriser-client"
+
+[tool.hatch.version]
+path = "src/elpriser/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/elpriser"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/elpriser", "tests", "scripts", "README.md", "LICENSE", "pyproject.toml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = "-ra -p no:cacheprovider"
+markers = ["live: talks to the real elpriser.org API; opt in with ELPRISER_LIVE=1"]
+
+[tool.ruff]
+target-version = "py39"
+line-length = 120
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC", "RUF", "S", "SIM", "C4"]
+ignore = ["UP006", "UP007", "UP035", "UP045", "RUF001", "RUF002", "RUF003", "E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "S105", "S106"]
+"scripts/*" = ["S101", "S310"]
+
+[tool.mypy]
+python_version = "3.10"  # mypy dropped 3.9 as a target; the code is written for 3.9 and CI runs the tests on it
+strict = true
+files = ["src/elpriser"]
+
+[[tool.mypy.overrides]]
+module = ["pandas", "pandas.*"]
+ignore_missing_imports = true
