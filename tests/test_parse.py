@@ -256,7 +256,14 @@ def _fi_feed(days):
         "generated": "2026-11-03",
         "trainedThrough": None,
         "unit": "EUR/MWh",
-        "zoneInfo": {"name": "FI Finland", "country": "FI", "currency": "EUR", "rate": 1, "rateDate": "2026-11-03", "rateSource": "ECB"},
+        "zoneInfo": {
+            "name": "FI Finland",
+            "country": "FI",
+            "currency": "EUR",
+            "rate": 1,
+            "rateDate": "2026-11-03",
+            "rateSource": "ECB",
+        },
         "days": [
             {"date": d, "type": "actual", "prices": [{"hour": h, "eur_mwh": v} for h, v in enumerate(vals)]}
             for d, vals in days.items()
@@ -290,5 +297,7 @@ def test_finland_days_with_a_clock_change():
     day = fall.day(date(2026, 10, 25)).slots
     assert len(day) == 25  # Helsinki 03:00 happens twice
     assert day[0].start == datetime(2026, 10, 24, 21, 0, tzinfo=timezone.utc)
-    assert day[3].start == datetime(2026, 10, 25, 0, 0, tzinfo=timezone.utc) and day[4].start == datetime(2026, 10, 25, 1, 0, tzinfo=timezone.utc)
+    assert day[3].start == datetime(2026, 10, 25, 0, 0, tzinfo=timezone.utc) and day[4].start == datetime(
+        2026, 10, 25, 1, 0, tzinfo=timezone.utc
+    )
     assert day[3].price_mwh == day[4].price_mwh == 3.0
