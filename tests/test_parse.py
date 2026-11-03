@@ -245,3 +245,50 @@ def test_supplier():
 def test_shelly_unexpected_shape():
     with pytest.raises(ElpriserParseError):
         _parse.parse_shelly_tariff({"data": {}})
+
+
+# ── Finland is on Helsinki's clock (elpriser.org cut `fi` into Helsinki days; ground truth: ENTSO-E A44, 2026-11-03) ──
+
+
+def _fi_feed(days):
+    return {
+        "zone": "fi",
+        "generated": "2026-11-03",
+        "trainedThrough": None,
+        "unit": "EUR/MWh",
+        "zoneInfo": {"name": "FI Finland", "country": "FI", "currency": "EUR", "rate": 1, "rateDate": "2026-11-03", "rateSource": "ECB"},
+        "days": [
+            {"date": d, "type": "actual", "prices": [{"hour": h, "eur_mwh": v} for h, v in enumerate(vals)]}
+            for d, vals in days.items()
+        ],
+    }
+
+
+def test_finland_hour_0_is_helsinki_midnight():
+    assert Zone.FI.tz == "Europe/Helsinki"
+    # ENTSO-E (and Energy-Charts): the 2026-11-03 market day starts at 2026-11-02T23:00Z = 01:00 Helsinki, so the Finnish
+    # day 2026-11-03 has 5.77 (the first market hour) at hour 1, and hour 0 is 22:00Z, the hour before.
+    values = [4.0, 5.77, 5.11] + [float(h) for h in range(3, 24)]
+    s = _parse.parse_zone_feed(_fi_feed({"2026-11-03": values}), Zone.FI)
+    slots = s.day(date(2026, 11, 3)).slots
+    assert slots[0].start == datetime(2026, 11, 2, 22, 0, tzinfo=timezone.utc)
+    assert slots[1].start == datetime(2026, 11, 2, 23, 0, tzinfo=timezone.utc)
+    assert (slots[1].price_mwh, slots[1].hour) == (5.77, 1)
+    assert slots[2].start == datetime(2026, 11, 3, 0, 0, tzinfo=timezone.utc)
+    assert slots[23].start == datetime(2026, 11, 3, 21, 0, tzinfo=timezone.utc)
+    assert slots[1].start.astimezone(s.tzinfo).hour == 1
+
+
+def test_finland_days_with_a_clock_change():
+    spring = _parse.parse_zone_feed(_fi_feed({"2026-03-29": [float(h) for h in range(24)]}), Zone.FI)
+    day = spring.day(date(2026, 3, 29)).slots
+    assert len(day) == 23  # Helsinki 03:00 does not exist
+    assert day[0].start == datetime(2026, 3, 28, 22, 0, tzinfo=timezone.utc)
+    assert [s.hour for s in day][:5] == [0, 1, 2, 4, 5]
+    assert day[3].start == datetime(2026, 3, 29, 1, 0, tzinfo=timezone.utc)  # 04:00 EEST
+    fall = _parse.parse_zone_feed(_fi_feed({"2026-10-25": [float(h) for h in range(24)]}), Zone.FI)
+    day = fall.day(date(2026, 10, 25)).slots
+    assert len(day) == 25  # Helsinki 03:00 happens twice
+    assert day[0].start == datetime(2026, 10, 24, 21, 0, tzinfo=timezone.utc)
+    assert day[3].start == datetime(2026, 10, 25, 0, 0, tzinfo=timezone.utc) and day[4].start == datetime(2026, 10, 25, 1, 0, tzinfo=timezone.utc)
+    assert day[3].price_mwh == day[4].price_mwh == 3.0

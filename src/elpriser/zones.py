@@ -2,9 +2,12 @@
 
 The list mirrors the ``zone`` enum of https://elpriser.org/api/openapi.json (40
 zones). ``tz`` is the wall clock the API's ``hour`` field (0-23) is expressed in:
-the 13 Nordic/NL feed zones are all on Copenhagen time (also Finland: the feed
-floors every slot to the Copenhagen hour), every other zone is on its own
-country's clock.
+the 13 Nordic/NL zones follow their own wall clock (Copenhagen's for DK, NO, SE and
+NL; Helsinki's for Finland: since elpriser.org cut ``fi`` into Helsinki days, hour 0
+of a Finnish day is 22:00 UTC in winter), every other zone is on its own country's
+clock. Until then ``fi`` was indexed by the Copenhagen hour, which 0.1.0 of this package
+labelled correctly; from 0.1.1 on it expects the Helsinki days (older versions place every
+Finnish hour one hour early once the API has changed).
 """
 
 from __future__ import annotations
@@ -45,7 +48,7 @@ _DATA: Dict[str, _ZoneData] = {
     "se2": _d("SE2 Sundsvall", "SE", "SEK", _CPH, "nordic"),
     "se3": _d("SE3 Stockholm", "SE", "SEK", _CPH, "nordic"),
     "se4": _d("SE4 Malmö", "SE", "SEK", _CPH, "nordic"),
-    "fi": _d("FI Finland", "FI", "EUR", _CPH, "nordic"),
+    "fi": _d("FI Finland", "FI", "EUR", "Europe/Helsinki", "nordic"),
     "nl": _d("NL Nederland", "NL", "EUR", _CPH, "nordic"),
     "de": _d("DE-LU Germany and Luxembourg", "DE", "EUR", "Europe/Berlin", "eu"),
     "fr": _d("FR France", "FR", "EUR", "Europe/Paris", "eu"),
